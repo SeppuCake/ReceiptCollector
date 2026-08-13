@@ -18,9 +18,15 @@
     "test:e2e": "npm run build && node scripts/run-playwright.mjs",
     "regulatory:validate": "node scripts/regulatory/validate.mjs",
     "preview": "vite preview",
+    "native:sync": "npm run build && cap sync",
+    "native:android": "cap open android",
+    "native:ios": "cap open ios",
+    "native:windows:info": "tauri info",
     "verify": "npm run typecheck && npm run lint && npm test && npm run regulatory:validate && npm run build && npm run test:e2e"
   },
   "dependencies": {
+    "@capacitor/core": "8.5.0",
+    "@tauri-apps/api": "2.11.1",
     "dexie": "^4.4.4",
     "lucide-react": "^1.31.0",
     "react": "^19.2.8",
@@ -28,8 +34,12 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@capacitor/android": "8.5.0",
+    "@capacitor/cli": "8.5.0",
+    "@capacitor/ios": "8.5.0",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "1.62.1",
+    "@tauri-apps/cli": "2.11.4",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.4",
