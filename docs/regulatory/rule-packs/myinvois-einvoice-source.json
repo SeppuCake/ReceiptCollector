@@ -1,0 +1,5 @@
+{
+  "kind": "source-register-only",
+  "rules": [],
+  "notice": "No MyInvois validation, submission, or live-status rule is implemented in Stage 1."
+}

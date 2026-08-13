@@ -1,0 +1,5 @@
+{
+  "kind": "source-register-only",
+  "rules": [],
+  "notice": "No retention calculation or legal constant is implemented in Stage 1."
+}

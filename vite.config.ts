@@ -37,6 +37,7 @@ export default defineConfig({
       },
       injectManifest: {
         globPatterns: ['**/*.{js,css,html,svg}'],
+        rollupFormat: 'iife',
       },
       devOptions: { enabled: false },
     }),

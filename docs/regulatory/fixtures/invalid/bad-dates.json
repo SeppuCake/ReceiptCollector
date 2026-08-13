@@ -1,0 +1,19 @@
+{
+  "formatVersion": 1,
+  "entries": [{
+    "id": "test-bad-dates",
+    "authority": "Test authority",
+    "title": "Bad dates",
+    "version": "1",
+    "publicationDate": "2025-02-30",
+    "retrievalDate": "2025-01-01",
+    "officialUrl": "https://example.invalid/official",
+    "sha256": "3a95e4bf28c4523879093bdb86310e6e898c206a719a78b1ae65674ae191259b",
+    "effectivePeriod": { "from": "2025-12-31", "to": "2025-01-01" },
+    "supersedes": [],
+    "scope": "test.dates",
+    "applicationRelease": "test",
+    "status": "active",
+    "rulePack": "pack.json"
+  }]
+}

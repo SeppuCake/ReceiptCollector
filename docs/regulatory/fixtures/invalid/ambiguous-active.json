@@ -1,0 +1,37 @@
+{
+  "formatVersion": 1,
+  "entries": [
+    {
+      "id": "test-ambiguous-1",
+      "authority": "Test authority",
+      "title": "Ambiguous one",
+      "version": "1",
+      "publicationDate": "2025-01-01",
+      "retrievalDate": "2025-01-02",
+      "officialUrl": "https://example.invalid/one",
+      "sha256": "3a95e4bf28c4523879093bdb86310e6e898c206a719a78b1ae65674ae191259b",
+      "effectivePeriod": { "from": "2025-01-01", "to": null },
+      "supersedes": [],
+      "scope": "test.ambiguous",
+      "applicationRelease": "test",
+      "status": "active",
+      "rulePack": "pack.json"
+    },
+    {
+      "id": "test-ambiguous-2",
+      "authority": "Test authority",
+      "title": "Ambiguous two",
+      "version": "2",
+      "publicationDate": "2025-02-01",
+      "retrievalDate": "2025-02-02",
+      "officialUrl": "https://example.invalid/two",
+      "sha256": "3a95e4bf28c4523879093bdb86310e6e898c206a719a78b1ae65674ae191259b",
+      "effectivePeriod": { "from": "2025-02-01", "to": null },
+      "supersedes": [],
+      "scope": "test.ambiguous",
+      "applicationRelease": "test",
+      "status": "active",
+      "rulePack": "pack.json"
+    }
+  ]
+}

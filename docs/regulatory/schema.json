@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://receipt-collector.invalid/regulatory-register.schema.json",
+  "title": "Receipt Collector regulatory source register",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["formatVersion", "entries"],
+  "properties": {
+    "formatVersion": { "const": 1 },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "authority", "title", "version", "publicationDate", "retrievalDate", "officialUrl", "sha256", "effectivePeriod", "supersedes", "scope", "applicationRelease", "status", "rulePack"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9.-]+$" },
+          "authority": { "type": "string", "minLength": 1 },
+          "title": { "type": "string", "minLength": 1 },
+          "version": { "type": "string", "minLength": 1 },
+          "publicationDate": { "type": "string", "format": "date" },
+          "retrievalDate": { "type": "string", "format": "date" },
+          "officialUrl": { "type": "string", "format": "uri", "pattern": "^https://" },
+          "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "effectivePeriod": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["from", "to"],
+            "properties": { "from": { "type": "string", "format": "date" }, "to": { "type": ["string", "null"], "format": "date" } }
+          },
+          "supersedes": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+          "scope": { "type": "string", "minLength": 1 },
+          "applicationRelease": { "type": "string", "minLength": 1 },
+          "status": { "enum": ["registered", "active", "superseded"] },
+          "rulePack": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}

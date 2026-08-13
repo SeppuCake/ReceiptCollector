@@ -1,0 +1,53 @@
+{
+  "formatVersion": 1,
+  "entries": [
+    {
+      "id": "my-irbm-record-retention-pr-3-2015",
+      "authority": "Inland Revenue Board of Malaysia (HASiL)",
+      "title": "Public Ruling No. 3/2015 - Failure to Furnish Information Within a Stipulated Period",
+      "version": "3/2015",
+      "publicationDate": "2015-07-29",
+      "retrievalDate": "2026-08-13",
+      "officialUrl": "https://phl.hasil.gov.my/pdf/pdfam/PR_3_2015.pdf",
+      "sha256": "53dbd3e231ba8d39084d16f946f88d9b6e763996b40f9789321e68d7f6faa819",
+      "effectivePeriod": { "from": "2015-07-29", "to": null },
+      "supersedes": [],
+      "scope": "malaysia.irbm.record-retention.source-review",
+      "applicationRelease": "unreleased-stage-1",
+      "status": "registered",
+      "rulePack": "rule-packs/irbm-retention-source.json"
+    },
+    {
+      "id": "my-irbm-einvoice-guideline-4-7",
+      "authority": "Inland Revenue Board of Malaysia (HASiL)",
+      "title": "e-Invoice Guideline",
+      "version": "4.7",
+      "publicationDate": "2026-07-07",
+      "retrievalDate": "2026-08-13",
+      "officialUrl": "https://www.hasil.gov.my/en/e-invoice/reference-for-the-implementation-of-e-invoice/guidelines/",
+      "sha256": "cd1b1cbeaa64ca8b02089f6021527b85d7f6d1dc69c3212d4a8f81318a9436a1",
+      "effectivePeriod": { "from": "2026-07-07", "to": null },
+      "supersedes": [],
+      "scope": "malaysia.myinvois.einvoice.source-review",
+      "applicationRelease": "unreleased-stage-1",
+      "status": "registered",
+      "rulePack": "rule-packs/myinvois-einvoice-source.json"
+    },
+    {
+      "id": "my-irbm-form-be-ya2025-explanatory-notes",
+      "authority": "Inland Revenue Board of Malaysia (HASiL)",
+      "title": "Explanatory Notes Form BE for Year of Assessment 2025",
+      "version": "YA 2025",
+      "publicationDate": "2025-12-30",
+      "retrievalDate": "2026-08-13",
+      "officialUrl": "https://www.hasil.gov.my/media/pshpbomm/explanatorynotes_be2025_2.pdf",
+      "sha256": "224d622216a339595a06e8fc74c132911d466e272970cf46416c182a13a3d7e0",
+      "effectivePeriod": { "from": "2025-01-01", "to": "2025-12-31" },
+      "supersedes": [],
+      "scope": "malaysia.irbm.form-be.ya-2025.source-review",
+      "applicationRelease": "unreleased-stage-1",
+      "status": "registered",
+      "rulePack": "rule-packs/form-be-ya2025-source.json"
+    }
+  ]
+}

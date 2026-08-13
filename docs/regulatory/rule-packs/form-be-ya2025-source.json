@@ -1,0 +1,5 @@
+{
+  "kind": "source-register-only",
+  "rules": [],
+  "notice": "No Form BE calculation, rate, relief, or filing constant is implemented in Stage 1."
+}
