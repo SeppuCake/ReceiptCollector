@@ -1,7 +1,8 @@
 import { useRef, useState, type ChangeEvent, type DragEvent } from 'react'
 import { Camera, FileUp, Images, LoaderCircle, ShieldCheck } from 'lucide-react'
 import type { ReceiptRecord, ReceiptSource } from '../domain/receipt'
-import { createReceipt, validateReceiptFiles } from '../infrastructure/db'
+import { filesToDocuments, platform } from '../platform'
+import { validateReceiptDocuments } from '../platform/browser/baselineDexieAdapter'
 
 interface CapturePanelProps {
   onSaved: (receipt: ReceiptRecord) => void
@@ -14,7 +15,8 @@ export function CapturePanel({ onSaved }: CapturePanelProps) {
   const [error, setError] = useState<string>()
 
   async function save(files: File[], source: ReceiptSource) {
-    const issues = validateReceiptFiles(files)
+    const documents = filesToDocuments(files)
+    const issues = validateReceiptDocuments(documents)
     if (issues.length > 0) {
       setError(issues.join(' '))
       return
@@ -23,7 +25,12 @@ export function CapturePanel({ onSaved }: CapturePanelProps) {
     setSaving(true)
     setError(undefined)
     try {
-      onSaved(await createReceipt(files, source))
+      const result = await platform.receipts.capture({ documents, source })
+      if (!result.ok) {
+        setError(result.error.message)
+        return
+      }
+      onSaved(result.value)
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'The receipt could not be saved.')
     } finally {
@@ -93,4 +100,3 @@ export function CapturePanel({ onSaved }: CapturePanelProps) {
     </section>
   )
 }
-

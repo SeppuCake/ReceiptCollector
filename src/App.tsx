@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useLiveQuery } from 'dexie-react-hooks'
 import {
   Archive,
   Camera,
@@ -25,7 +24,8 @@ import { ReviewPanel } from './components/ReviewPanel'
 import { StatusPill } from './components/StatusPill'
 import { formatMoney } from './domain/money'
 import type { ReceiptAsset, ReceiptRecord } from './domain/receipt'
-import { createReceipt, db } from './infrastructure/db'
+import { filesToDocuments, platform } from './platform'
+import { useReceiptSnapshot } from './platform/react/useReceiptSnapshot'
 import { downloadCsv } from './services/exportReceipts'
 import { consumeSharedFiles } from './services/sharedReceipts'
 
@@ -90,8 +90,7 @@ function EmptyInbox({ onCapture }: { onCapture: () => void }) {
 }
 
 export default function App() {
-  const receipts = useLiveQuery(() => db.receipts.orderBy('capturedAt').reverse().toArray(), [], [])
-  const assets = useLiveQuery(() => db.assets.toArray(), [], [])
+  const { receipts, assets } = useReceiptSnapshot(platform.receipts)
   const [view, setView] = useState<View>('home')
   const [filter, setFilter] = useState<InboxFilter>('all')
   const [search, setSearch] = useState('')
@@ -109,7 +108,9 @@ export default function App() {
     void consumeSharedFiles(shareId)
       .then(async (files) => {
         if (files.length === 0) throw new Error('The shared receipt could not be recovered.')
-        const receipt = await createReceipt(files, 'share')
+        const result = await platform.receipts.capture({ documents: filesToDocuments(files), source: 'share' })
+        if (!result.ok) throw new Error(result.error.message)
+        const receipt = result.value
         setView('inbox')
         setSelectedId(receipt.id)
       })
@@ -240,9 +241,9 @@ export default function App() {
               <button className="primary-button" disabled={confirmedReceipts.length === 0} onClick={() => downloadCsv(confirmedReceipts)}><Download /> Export {confirmedReceipts.length} confirmed receipts</button>
             </section>
             <section className="content-card settings-card">
-              <span className="eyebrow">Cloud connection</span><h2>Local-only mode</h2>
-              <p><CloudOff className="inline-icon" /> Supabase is not configured yet. Your receipts currently live only in this browser profile and are not available on another device.</p>
-              <div className="configuration-note">Add deployment credentials only after the hosting and privacy choices are confirmed.</div>
+              <span className="eyebrow">Network boundary</span><h2>Local-only mode</h2>
+              <p><CloudOff className="inline-icon" /> Your receipts live only in this browser profile and are not available on another device.</p>
+              <div className="configuration-note">Ordinary runtime traffic is prohibited from leaving this device.</div>
             </section>
             <section className="content-card settings-card full-width">
               <span className="eyebrow">Defaults</span><h2>Current product assumptions</h2>
@@ -260,7 +261,7 @@ export default function App() {
         <button onClick={() => setMenuOpen(true)}><MoreHorizontal /><span>More</span></button>
       </nav>
 
-      {selectedReceipt && <ReviewPanel key={selectedReceipt.id} receipt={selectedReceipt} onClose={() => setSelectedId(undefined)} onDeleted={() => setSelectedId(undefined)} />}
+      {selectedReceipt && <ReviewPanel key={selectedReceipt.id} receipt={selectedReceipt} assets={assets.filter((asset) => asset.receiptId === selectedReceipt.id)} onClose={() => setSelectedId(undefined)} onDeleted={() => setSelectedId(undefined)} />}
     </div>
   )
 }

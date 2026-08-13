@@ -1,13 +1,13 @@
 import { useState, type FormEvent } from 'react'
-import { useLiveQuery } from 'dexie-react-hooks'
 import { Check, ChevronLeft, Clock3, Trash2, X } from 'lucide-react'
-import { categories, paymentMethods, receiptReviewSchema, type ReceiptRecord, type ReceiptReviewInput } from '../domain/receipt'
+import { categories, paymentMethods, receiptReviewSchema, type ReceiptAsset, type ReceiptRecord, type ReceiptReviewInput } from '../domain/receipt'
 import { minorToInput, parseMoneyToMinor } from '../domain/money'
-import { db, deleteReceipt } from '../infrastructure/db'
+import { platform } from '../platform'
 import { ReceiptThumbnail } from './ReceiptThumbnail'
 
 interface ReviewPanelProps {
   receipt: ReceiptRecord
+  assets: ReceiptAsset[]
   onClose: () => void
   onDeleted: () => void
 }
@@ -26,12 +26,12 @@ function initialValues(receipt: ReceiptRecord): ReceiptReviewInput {
   }
 }
 
-export function ReviewPanel({ receipt, onClose, onDeleted }: ReviewPanelProps) {
-  const assets = useLiveQuery(() => db.assets.where('receiptId').equals(receipt.id).toArray(), [receipt.id], [])
+export function ReviewPanel({ receipt, assets, onClose, onDeleted }: ReviewPanelProps) {
   const [selectedAssetId, setSelectedAssetId] = useState(receipt.primaryFileId)
   const [values, setValues] = useState<ReceiptReviewInput>(() => initialValues(receipt))
   const [errors, setErrors] = useState<FieldErrors>({})
   const [saving, setSaving] = useState(false)
+  const [actionError, setActionError] = useState<string>()
 
   function setField<K extends keyof ReceiptReviewInput>(field: K, value: ReceiptReviewInput[K]) {
     setValues((current) => ({ ...current, [field]: value }))
@@ -52,8 +52,9 @@ export function ReviewPanel({ receipt, onClose, onDeleted }: ReviewPanelProps) {
     }
 
     setSaving(true)
+    setActionError(undefined)
     try {
-      await db.receipts.update(receipt.id, {
+      const updateResult = await platform.receipts.update(receipt.id, {
         merchant: result.data.merchant,
         transactionDate: result.data.transactionDate,
         totalMinor: parseMoneyToMinor(result.data.total),
@@ -65,6 +66,10 @@ export function ReviewPanel({ receipt, onClose, onDeleted }: ReviewPanelProps) {
         syncState: 'local',
         updatedAt: new Date().toISOString(),
       })
+      if (!updateResult.ok) {
+        setActionError(updateResult.error.message)
+        return
+      }
       onClose()
     } finally {
       setSaving(false)
@@ -73,7 +78,12 @@ export function ReviewPanel({ receipt, onClose, onDeleted }: ReviewPanelProps) {
 
   async function remove() {
     if (!window.confirm('Delete this receipt and every locally stored copy of its files? This cannot be undone.')) return
-    await deleteReceipt(receipt.id)
+    setActionError(undefined)
+    const result = await platform.receipts.delete(receipt.id)
+    if (!result.ok) {
+      setActionError(result.error.message)
+      return
+    }
     onDeleted()
   }
 
@@ -171,6 +181,7 @@ export function ReviewPanel({ receipt, onClose, onDeleted }: ReviewPanelProps) {
               <button type="button" className="danger-button" onClick={() => void remove()}><Trash2 aria-hidden="true" /> Delete</button>
               <button type="submit" className="primary-button" disabled={saving}><Check aria-hidden="true" /> {saving ? 'Saving…' : 'Confirm expense'}</button>
             </div>
+            {actionError && <div className="inline-message error" role="alert">{actionError}</div>}
           </form>
         </div>
       </section>
