@@ -1,71 +1,58 @@
 # Receipt Collector
 
-A local-first, installable receipt inbox for capturing paper receipts and e-receipts immediately, reviewing extracted details later, and exporting confirmed expenses to a ledger.
+Receipt Collector is an offline-first personal finance prototype for keeping receipt evidence, reviewing extracted values, and building a trustworthy MYR ledger with minimal typing.
 
-## What works locally
+## Current prototype
 
-- Mobile camera capture and image/PDF import
-- Atomic IndexedDB persistence of receipt metadata and original files
-- SHA-256 duplicate detection
-- Multiple images for a long receipt
-- Receipt inbox, search, filters, review, deletion, and monthly totals
-- Integer-sen money handling and CSV export
-- Responsive desktop/mobile UI and installable PWA shell
-- Android/Chromium share-target intake for screenshots and PDFs
+The checked-in application is the preserved browser prototype. It currently provides:
 
-The application starts in local-only mode. Browser data is not a backup: cloud synchronization must be configured before relying on multiple devices or clearing browser storage.
+- camera and image/PDF intake;
+- IndexedDB storage of receipt metadata and original files;
+- SHA-256 duplicate detection;
+- multi-file receipts;
+- receipt search, filters, review, deletion, monthly totals, and CSV export;
+- an installable PWA shell and Android/Chromium Share Target.
 
-## Local development
+Important: the current IndexedDB data is not an encrypted native vault. Browser storage may be cleared or evicted and is not a backup. Do not rely on the prototype for irreplaceable records yet.
+
+## Approved prototype direction
+
+The target is a private, single-user application sharing one React/TypeScript core across:
+
+- Android 12 and later through Capacitor;
+- iPhone through Capacitor;
+- Windows 10 22H2 x64 and Windows 11 x64 through Tauri.
+
+Normal operation, OCR, imports, ledger calculations, tax estimates, and backup creation must work without internet. No receipt, statement, OCR, ledger, or telemetry data may be uploaded. Email verification, cloud synchronization, MyInvois submission, and live MyInvois status checks are outside the approved prototype.
+
+The planned prototype includes encrypted local storage and recovery, local PIN with optional platform authentication, English/Malay/Traditional Chinese OCR, Malaysian e-Invoice intake, Maybank and spreadsheet imports, line items and splits, reconciliation, monthly targets, Form BE estimates, and an auditable workbook. These are roadmap commitments, not current implementation claims.
+
+The Supabase schema and Azure OCR function remain checked in only as historical prototype artifacts. They are inactive in the UI and are not the production direction.
+
+## Development
+
+Use the pinned Node and npm versions:
 
 ```powershell
-npm.cmd install
-npm.cmd run dev
+node --version
+npm.cmd --version
+npm.cmd ci
+npm.cmd run verify
 ```
 
-Quality checks:
+Individual checks are available as `typecheck`, `lint`, `test`, and `build` scripts.
 
-```powershell
-npm.cmd run typecheck
-npm.cmd run lint
-npm.cmd test
-npm.cmd run build
-```
+## Product safeguards
 
-## Cloud and OCR setup
+- Source documents remain separate from financial transactions.
+- Money is stored as integer sen.
+- OCR and imported values remain untrusted until a person confirms them.
+- Imports must be previewed and committed atomically.
+- Removing evidence must never silently remove its financial transaction.
+- Scanning a paper document is not presented as permission to destroy the original. Users must follow the applicable IRBM retention requirements.
 
-1. Create a Supabase project in the region selected for the privacy requirements.
-2. Apply `supabase/migrations/20260813000000_initial_receipt_collector.sql`.
-3. Deploy `supabase/functions/process-receipt`.
-4. Set server secrets `AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT` and `AZURE_DOCUMENT_INTELLIGENCE_KEY`.
-5. Configure the web deployment with `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` from `.env.example`.
-6. Test row-level policies with two disposable users before accepting real receipts.
+Architecture decisions are recorded in [docs/decisions](docs/decisions), security boundaries in [docs/security](docs/security), and baseline evidence in [docs/baseline](docs/baseline).
 
-The checked-in OCR function is an auditable provider adapter, but production synchronization remains deliberately disabled in the UI until authentication, hosting, retention, and OCR-provider choices are approved.
+## Release boundary
 
-## Architecture
-
-```text
-Camera / Files / Android Share Target
-                 |
-          IndexedDB receipt vault
-                 |
-       Human review and correction
-                 |
-      PostgreSQL + private storage
-                 |
-    server-only receipt OCR adapter
-                 |
-       confirmed expense + export
-```
-
-Receipt files, OCR attempts, and confirmed expenses are separate records. This preserves originals, makes retries idempotent, and keeps OCR output from silently becoming financial truth.
-
-## Current defaults
-
-- Single user
-- Malaysian Ringgit (MYR)
-- Asia/Kuala_Lumpur
-- English interface
-- Human confirmation required before export
-- Maximum 10 files per receipt and 15 MB per file
-
+This repository is preparing an internal prototype candidate only. No public release, store submission, production signing, remote deployment, or stable-release claim is authorized until device testing and user acceptance are complete.

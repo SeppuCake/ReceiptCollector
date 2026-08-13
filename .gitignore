@@ -1,11 +1,52 @@
 node_modules/
 dist/
 coverage/
+.vite/
+*.tsbuildinfo
+
+# Environment and credentials
 .env
-.env.local
+.env.*
+!.env.example
+
+# Private financial and benchmark material
+private-data/
+benchmark-data/
+regulatory-downloads/
+local-backups/
+local-exports/
+*.sqlite
+*.sqlite3
+*.sqlite-*
+*.db
+*.db-*
+*.dump
+*.backup
+
+# Signing and provisioning secrets
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.mobileprovision
+android/key.properties
+android/local.properties
+
+# Generated native and Rust output
+android/.gradle/
+android/.idea/
+android/app/build/
+ios/App/Pods/
+ios/App/build/
+**/xcuserdata/
+*.xcuserstate
+DerivedData/
+src-tauri/target/
+supabase/.temp/
+
+# Logs, editors, and test output
 *.log
 .DS_Store
 Thumbs.db
 playwright-report/
 test-results/
-
