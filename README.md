@@ -27,7 +27,7 @@ Normal operation, OCR, imports, ledger calculations, tax estimates, and backup c
 
 The planned prototype includes encrypted local storage and recovery, local PIN with optional platform authentication, English/Malay/Traditional Chinese OCR, Malaysian e-Invoice intake, Maybank and spreadsheet imports, line items and splits, reconciliation, monthly targets, Form BE estimates, and an auditable workbook. These are roadmap commitments, not current implementation claims.
 
-The Supabase schema and Azure OCR function remain checked in only as historical prototype artifacts. They are inactive in the UI and are not the production direction.
+The `supabase/` schema and function remain checked in only as historical, non-deployed prototype source. No cloud client, browser credentials, or Supabase runtime dependency ships in the application.
 
 ## Development
 
@@ -37,10 +37,11 @@ Use the pinned Node and npm versions:
 node --version
 npm.cmd --version
 npm.cmd ci
+npx.cmd playwright install chromium
 npm.cmd run verify
 ```
 
-Individual checks are available as `typecheck`, `lint`, `test`, and `build` scripts.
+Individual checks are available as `typecheck`, `lint`, `test`, `regulatory:validate`, `build`, and `test:e2e` scripts. E2E tests use synthetic receipts, exercise the production service worker offline, and fail on any non-loopback request.
 
 ## Product safeguards
 
@@ -51,7 +52,11 @@ Individual checks are available as `typecheck`, `lint`, `test`, and `build` scri
 - Removing evidence must never silently remove its financial transaction.
 - Scanning a paper document is not presented as permission to destroy the original. Users must follow the applicable IRBM retention requirements.
 
-Architecture decisions are recorded in [docs/decisions](docs/decisions), security boundaries in [docs/security](docs/security), and baseline evidence in [docs/baseline](docs/baseline).
+Architecture decisions are recorded in [docs/decisions](docs/decisions), security boundaries in [docs/security](docs/security), dependency evidence in [docs/dependencies](docs/dependencies), the offline regulatory register in [docs/regulatory](docs/regulatory), and baseline evidence in [docs/baseline](docs/baseline).
+
+## Stage 1 platform boundary
+
+Application code consumes typed capability contracts from `src/platform/contracts`. Deterministic fakes and reusable failure-oriented contract suites live in `src/platform/testing`. The current Dexie implementation is isolated in a browser baseline adapter and remains explicitly unencrypted and non-durable; it preserves prototype behavior while native vault work proceeds.
 
 ## Release boundary
 
