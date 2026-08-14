@@ -31,7 +31,7 @@ async function run() {
   await waitForPreview()
   const playwright = spawn(
     process.execPath,
-    [resolve(root, 'node_modules/@playwright/test/cli.js'), 'test', '--config', resolve(root, 'playwright.config.ts')],
+    [resolve(root, 'node_modules/@playwright/test/cli.js'), 'test', '--config', resolve(root, process.argv[2] ?? 'playwright.config.ts')],
     { cwd: root, stdio: 'inherit', windowsHide: true },
   )
   return await new Promise((resolveExit, reject) => {

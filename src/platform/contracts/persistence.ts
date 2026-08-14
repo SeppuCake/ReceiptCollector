@@ -1,4 +1,5 @@
 import type { ReceiptAsset, ReceiptRecord, ReceiptSource } from '../../domain/receipt'
+import type { ReceiptOcrCandidates } from '../../domain/ocr'
 import type { PlatformResult } from './result'
 
 export interface ReceiptSnapshot {
@@ -31,6 +32,8 @@ export type ReceiptUpdate = Partial<
     | 'status'
     | 'syncState'
     | 'updatedAt'
+    | 'ocrConfidence'
+    | 'failureReason'
   >
 >
 
@@ -43,5 +46,10 @@ export interface ReceiptLedgerPersistence {
   watch(listener: (snapshot: ReceiptSnapshot) => void, onError?: (error: unknown) => void): () => void
   capture(request: ReceiptCaptureRequest): Promise<PlatformResult<ReceiptRecord>>
   update(receiptId: string, patch: ReceiptUpdate): Promise<PlatformResult<void>>
+  applyOcrSuggestions(
+    receiptId: string,
+    expectedUpdatedAt: string,
+    candidates: ReceiptOcrCandidates,
+  ): Promise<PlatformResult<{ applied: boolean }>>
   delete(receiptId: string): Promise<PlatformResult<void>>
 }

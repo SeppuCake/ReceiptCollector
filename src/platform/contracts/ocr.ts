@@ -1,34 +1,48 @@
+import type { OcrRun, ReceiptOcrCandidates, TextObservation } from '../../domain/ocr'
+import type { ReceiptAsset } from '../../domain/receipt'
 import type { PlatformResult } from './result'
 
-export interface OcrProvenance {
-  engine: string
-  engineVersion: string
-  model: string
-  modelVersion: string
-  processedAt: string
-  sourceDocumentSha256: string
+export interface TextRecognitionProgress {
+  progress: number
+  text: string
 }
 
-export interface OcrField<T> {
-  value?: T
-  confidence?: number
-  language?: string
-  evidence?: { page: number; text: string; boundingBox?: readonly number[] }
+export interface TextRecognitionResult {
+  observations: readonly TextObservation[]
+  detectedLanguages: readonly string[]
 }
 
-export interface ReceiptOcrResult {
-  languages: readonly string[]
-  merchant: OcrField<string>
-  transactionDate: OcrField<string>
-  totalMinor: OcrField<number>
-  taxMinor: OcrField<number>
-  currency: OcrField<string>
-  provenance: OcrProvenance
-  raw: unknown
+export interface TextRecognitionEngine {
+  readonly name: string
+  readonly version: string
+  readonly model: string
+  readonly modelVersion: string
+  supportedLanguages(): readonly string[]
+  recognize(
+    document: ReceiptAsset,
+    requestedLanguages: readonly string[],
+    options: { signal: AbortSignal; onProgress: (progress: TextRecognitionProgress) => void },
+  ): Promise<PlatformResult<TextRecognitionResult>>
+  cancel(): Promise<void>
 }
 
-export interface OfflineReceiptOcr {
-  supportedLanguages(): Promise<PlatformResult<readonly string[]>>
-  analyze(documentId: string, requestedLanguages: readonly string[]): Promise<PlatformResult<ReceiptOcrResult>>
-  cancel(operationId: string): Promise<PlatformResult<void>>
+export interface ReceiptFieldExtractor {
+  extract(observations: readonly TextObservation[]): ReceiptOcrCandidates
+}
+
+export type OcrRunPatch = Partial<Omit<OcrRun, 'id' | 'receiptId' | 'documentId'>>
+
+export interface OcrRunPersistence {
+  create(run: OcrRun): Promise<PlatformResult<void>>
+  update(runId: string, patch: OcrRunPatch): Promise<PlatformResult<void>>
+  latest(receiptId: string): Promise<PlatformResult<OcrRun | undefined>>
+  watchLatest(receiptId: string, listener: (run: OcrRun | undefined) => void, onError?: (error: unknown) => void): () => void
+}
+
+export interface ReceiptOcrCoordinator {
+  start(receiptId: string): Promise<PlatformResult<OcrRun>>
+  retry(receiptId: string): Promise<PlatformResult<OcrRun>>
+  cancel(runId: string): Promise<PlatformResult<void>>
+  latest(receiptId: string): Promise<PlatformResult<OcrRun | undefined>>
+  watchLatest(receiptId: string, listener: (run: OcrRun | undefined) => void, onError?: (error: unknown) => void): () => void
 }

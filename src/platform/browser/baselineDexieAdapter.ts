@@ -1,4 +1,5 @@
-import Dexie, { liveQuery, type EntityTable } from 'dexie'
+import { liveQuery } from 'dexie'
+import type { ReceiptOcrCandidates } from '../../domain/ocr'
 import type { ReceiptAsset, ReceiptRecord } from '../../domain/receipt'
 import type {
   Clock,
@@ -9,19 +10,7 @@ import type {
   ReceiptUpdate,
 } from '../contracts'
 import { failure, success, type PlatformResult } from '../contracts'
-
-class ReceiptCollectorDatabase extends Dexie {
-  receipts!: EntityTable<ReceiptRecord, 'id'>
-  assets!: EntityTable<ReceiptAsset, 'id'>
-
-  constructor() {
-    super('receipt-collector')
-    this.version(1).stores({
-      receipts: 'id, capturedAt, updatedAt, status, syncState, transactionDate, merchant',
-      assets: 'id, receiptId, sha256, createdAt',
-    })
-  }
-}
+import { receiptCollectorDatabase, type ReceiptCollectorDatabase } from './database'
 
 const MAX_FILE_SIZE = 15 * 1024 * 1024
 const ALLOWED_TYPES = new Set(['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'])
@@ -54,11 +43,10 @@ function interrupted(reason: unknown): PlatformResult<never> {
  * IndexedDB/Dexie is neither an encrypted vault nor a durable backup.
  */
 export class BaselineDexieReceiptRepository implements ReceiptLedgerPersistence {
-  private readonly database = new ReceiptCollectorDatabase()
-
   constructor(
     private readonly clock: Clock,
     private readonly identifiers: IdentifierSource,
+    private readonly database: ReceiptCollectorDatabase = receiptCollectorDatabase,
   ) {}
 
   async snapshot(): Promise<PlatformResult<ReceiptSnapshot>> {
@@ -138,9 +126,48 @@ export class BaselineDexieReceiptRepository implements ReceiptLedgerPersistence 
     }
   }
 
+  async applyOcrSuggestions(
+    receiptId: string,
+    expectedUpdatedAt: string,
+    candidates: ReceiptOcrCandidates,
+  ): Promise<PlatformResult<{ applied: boolean }>> {
+    try {
+      return await this.database.transaction('rw', this.database.receipts, async () => {
+        const receipt = await this.database.receipts.get(receiptId)
+        if (!receipt) return failure('unavailable', 'The receipt no longer exists.')
+        if (receipt.status === 'confirmed' || receipt.updatedAt !== expectedUpdatedAt) return success({ applied: false })
+
+        const confidences: number[] = []
+        const best = <T>(items: readonly { value: T; confidence: number }[]) => items[0]
+        const merchant = best(candidates.merchant)
+        const transactionDate = best(candidates.transactionDate)
+        const totalMinor = best(candidates.totalMinor)
+        const taxMinor = best(candidates.taxMinor)
+        for (const candidate of [merchant, transactionDate, totalMinor, taxMinor]) {
+          if (candidate) confidences.push(candidate.confidence)
+        }
+
+        await this.database.receipts.update(receiptId, {
+          ...(receipt.merchant || !merchant ? {} : { merchant: merchant.value }),
+          ...(receipt.transactionDate || !transactionDate ? {} : { transactionDate: transactionDate.value }),
+          ...(receipt.totalMinor !== undefined || !totalMinor ? {} : { totalMinor: totalMinor.value }),
+          ...(receipt.taxMinor !== undefined || !taxMinor ? {} : { taxMinor: taxMinor.value }),
+          status: 'needs_review',
+          failureReason: undefined,
+          ocrConfidence: confidences.length > 0 ? confidences.reduce((sum, value) => sum + value, 0) / confidences.length : undefined,
+          updatedAt: this.clock.now().toISOString(),
+        })
+        return success({ applied: true })
+      })
+    } catch (reason) {
+      return interrupted(reason)
+    }
+  }
+
   async delete(receiptId: string): Promise<PlatformResult<void>> {
     try {
-      await this.database.transaction('rw', this.database.receipts, this.database.assets, async () => {
+      await this.database.transaction('rw', this.database.receipts, this.database.assets, this.database.ocrRuns, async () => {
+        await this.database.ocrRuns.where('receiptId').equals(receiptId).delete()
         await this.database.assets.where('receiptId').equals(receiptId).delete()
         await this.database.receipts.delete(receiptId)
       })

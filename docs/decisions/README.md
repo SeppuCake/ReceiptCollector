@@ -2,7 +2,7 @@
 
 These records separate approved requirements from provisional implementation choices. Accepted decisions may be changed only through a new superseding record; implementation details marked **Open** are resolved at their stated stage.
 
-Stage 1 implementation status: the platform contracts, browser baseline adapter, outbound-request E2E gate, dependency review, and offline regulatory source-register validator are implemented. Native vault, OCR, parser, and cryptographic selections remain subject to their later acceptance gates.
+Implementation status: the platform contracts, browser baseline adapter, outbound-request E2E gate, dependency review, offline regulatory source-register validator, and an English/Malay browser OCR vertical slice are implemented. OCR suggestions remain untrusted until confirmation. Native vault, native/multilingual OCR, parser, and cryptographic selections remain subject to their later acceptance gates.
 
 - [0001: Product scope](0001-product-scope.md)
 - [0002: Platform matrix](0002-platform-matrix.md)

@@ -1,5 +1,6 @@
-import { useState, type FormEvent } from 'react'
-import { Check, ChevronLeft, Clock3, Trash2, X } from 'lucide-react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { Check, ChevronLeft, Clock3, LoaderCircle, RefreshCw, Square, Trash2, X } from 'lucide-react'
+import type { OcrCandidate, OcrRun } from '../domain/ocr'
 import { categories, paymentMethods, receiptReviewSchema, type ReceiptAsset, type ReceiptRecord, type ReceiptReviewInput } from '../domain/receipt'
 import { minorToInput, parseMoneyToMinor } from '../domain/money'
 import { platform } from '../platform'
@@ -32,8 +33,24 @@ export function ReviewPanel({ receipt, assets, onClose, onDeleted }: ReviewPanel
   const [errors, setErrors] = useState<FieldErrors>({})
   const [saving, setSaving] = useState(false)
   const [actionError, setActionError] = useState<string>()
+  const [ocrRun, setOcrRun] = useState<OcrRun>()
+  const touchedFields = useRef(new Set<keyof ReceiptReviewInput>())
+
+  useEffect(() => platform.ocr.watchLatest(receipt.id, setOcrRun, () => setActionError('OCR history could not be read.')), [receipt.id])
+
+  useEffect(() => {
+    if (ocrRun?.status !== 'completed') return
+    setValues((current) => ({
+      ...current,
+      ...(!touchedFields.current.has('merchant') && ocrRun.candidates.merchant[0] ? { merchant: ocrRun.candidates.merchant[0].value } : {}),
+      ...(!touchedFields.current.has('transactionDate') && ocrRun.candidates.transactionDate[0] ? { transactionDate: ocrRun.candidates.transactionDate[0].value } : {}),
+      ...(!touchedFields.current.has('total') && ocrRun.candidates.totalMinor[0] ? { total: minorToInput(ocrRun.candidates.totalMinor[0].value) } : {}),
+      ...(!touchedFields.current.has('tax') && ocrRun.candidates.taxMinor[0] ? { tax: minorToInput(ocrRun.candidates.taxMinor[0].value) } : {}),
+    }))
+  }, [ocrRun])
 
   function setField<K extends keyof ReceiptReviewInput>(field: K, value: ReceiptReviewInput[K]) {
+    touchedFields.current.add(field)
     setValues((current) => ({ ...current, [field]: value }))
     setErrors((current) => ({ ...current, [field]: undefined }))
   }
@@ -87,6 +104,26 @@ export function ReviewPanel({ receipt, assets, onClose, onDeleted }: ReviewPanel
     onDeleted()
   }
 
+  async function retryOcr() {
+    setActionError(undefined)
+    const result = await platform.ocr.retry(receipt.id)
+    if (!result.ok) setActionError(result.error.message)
+  }
+
+  async function cancelOcr() {
+    if (!ocrRun) return
+    const result = await platform.ocr.cancel(ocrRun.id)
+    if (!result.ok) setActionError(result.error.message)
+  }
+
+  function fieldHint<T>(candidates: readonly OcrCandidate<T>[]): { text: string; low: boolean } | undefined {
+    if (ocrRun?.status !== 'completed') return undefined
+    const candidate = candidates[0]
+    if (!candidate) return { text: 'Not found by OCR — enter this manually.', low: true }
+    const low = candidate.confidence < 0.75
+    return { text: `${low ? 'Low-confidence OCR suggestion' : 'OCR suggestion'} — please verify.`, low }
+  }
+
   const selectedAsset = assets.find((asset) => asset.id === selectedAssetId) ?? assets[0]
 
   return (
@@ -126,23 +163,40 @@ export function ReviewPanel({ receipt, assets, onClose, onDeleted }: ReviewPanel
           </div>
 
           <form className="review-form" onSubmit={submit} noValidate>
+            {ocrRun && (
+              <div className={`ocr-status ocr-${ocrRun.status}`} role="status" aria-live="polite">
+                <div>
+                  {['queued', 'running'].includes(ocrRun.status) && <LoaderCircle className="spin" aria-hidden="true" />}
+                  <strong>{ocrRun.status === 'completed' ? 'OCR suggestion — please verify' : ocrRun.status === 'failed' ? 'OCR could not read this receipt' : ocrRun.status === 'cancelled' ? 'OCR cancelled' : 'Reading receipt…'}</strong>
+                  <span>{ocrRun.status === 'running' ? `${ocrRun.progressText} · ${Math.round(ocrRun.progress * 100)}%` : ocrRun.failureReason ?? ocrRun.progressText}</span>
+                </div>
+                {['queued', 'running'].includes(ocrRun.status) ? (
+                  <button type="button" className="text-button" onClick={() => void cancelOcr()}><Square aria-hidden="true" /> Cancel</button>
+                ) : ocrRun.status !== 'completed' ? (
+                  <button type="button" className="text-button" onClick={() => void retryOcr()}><RefreshCw aria-hidden="true" /> Retry OCR</button>
+                ) : null}
+              </div>
+            )}
             <div className="field full-field">
               <label htmlFor="merchant">Merchant</label>
-              <input id="merchant" value={values.merchant} onChange={(event) => setField('merchant', event.target.value)} aria-invalid={Boolean(errors.merchant)} />
+              <input id="merchant" className={fieldHint(ocrRun?.candidates.merchant ?? [])?.low ? 'ocr-low-confidence' : ''} value={values.merchant} onChange={(event) => setField('merchant', event.target.value)} aria-invalid={Boolean(errors.merchant)} />
               {errors.merchant && <small className="field-error">{errors.merchant}</small>}
+              {!errors.merchant && fieldHint(ocrRun?.candidates.merchant ?? []) && <small className="ocr-field-hint">{fieldHint(ocrRun?.candidates.merchant ?? [])!.text}</small>}
             </div>
 
             <div className="form-row">
               <div className="field">
                 <label htmlFor="date">Purchase date</label>
-                <input id="date" type="date" value={values.transactionDate} onChange={(event) => setField('transactionDate', event.target.value)} aria-invalid={Boolean(errors.transactionDate)} />
+                <input id="date" className={fieldHint(ocrRun?.candidates.transactionDate ?? [])?.low ? 'ocr-low-confidence' : ''} type="date" value={values.transactionDate} onChange={(event) => setField('transactionDate', event.target.value)} aria-invalid={Boolean(errors.transactionDate)} />
                 {errors.transactionDate && <small className="field-error">{errors.transactionDate}</small>}
+                {!errors.transactionDate && fieldHint(ocrRun?.candidates.transactionDate ?? []) && <small className="ocr-field-hint">{fieldHint(ocrRun?.candidates.transactionDate ?? [])!.text}</small>}
               </div>
               <div className="field money-field">
                 <label htmlFor="total">Total</label>
                 <span className="input-prefix">RM</span>
-                <input id="total" inputMode="decimal" placeholder="0.00" value={values.total} onChange={(event) => setField('total', event.target.value)} aria-invalid={Boolean(errors.total)} />
+                <input id="total" className={fieldHint(ocrRun?.candidates.totalMinor ?? [])?.low ? 'ocr-low-confidence' : ''} inputMode="decimal" placeholder="0.00" value={values.total} onChange={(event) => setField('total', event.target.value)} aria-invalid={Boolean(errors.total)} />
                 {errors.total && <small className="field-error">{errors.total}</small>}
+                {!errors.total && fieldHint(ocrRun?.candidates.totalMinor ?? []) && <small className="ocr-field-hint">{fieldHint(ocrRun?.candidates.totalMinor ?? [])!.text}</small>}
               </div>
             </div>
 
@@ -167,8 +221,9 @@ export function ReviewPanel({ receipt, assets, onClose, onDeleted }: ReviewPanel
 
             <div className="field full-field">
               <label htmlFor="tax">Tax <span className="optional">Optional</span></label>
-              <input id="tax" inputMode="decimal" placeholder="0.00" value={values.tax} onChange={(event) => setField('tax', event.target.value)} aria-invalid={Boolean(errors.tax)} />
+              <input id="tax" className={fieldHint(ocrRun?.candidates.taxMinor ?? [])?.low ? 'ocr-low-confidence' : ''} inputMode="decimal" placeholder="0.00" value={values.tax} onChange={(event) => setField('tax', event.target.value)} aria-invalid={Boolean(errors.tax)} />
               {errors.tax && <small className="field-error">{errors.tax}</small>}
+              {!errors.tax && fieldHint(ocrRun?.candidates.taxMinor ?? []) && <small className="ocr-field-hint">{fieldHint(ocrRun?.candidates.taxMinor ?? [])!.text}</small>}
             </div>
 
             <div className="field full-field">

@@ -1,12 +1,27 @@
 import { BaselineDexieReceiptRepository } from './browser/baselineDexieAdapter'
+import { BrowserOcrRunRepository } from './browser/ocr/browserOcrRunRepository'
+import { TesseractTextRecognitionEngine } from './browser/ocr/tesseractTextRecognitionEngine'
 import { LoopbackOnlyRuntimePolicy } from './browser/runtimePolicy'
 import type { Clock, IdentifierSource } from './contracts'
+import { DeterministicReceiptFieldExtractor } from '../services/ocr/receiptFieldExtractor'
+import { LocalReceiptOcrCoordinator } from '../services/ocr/receiptOcrCoordinator'
 
 const systemClock: Clock = { now: () => new Date() }
 const systemIdentifiers: IdentifierSource = { next: () => crypto.randomUUID() }
+const receipts = new BaselineDexieReceiptRepository(systemClock, systemIdentifiers)
+const ocrRuns = new BrowserOcrRunRepository()
+const ocrEngine = new TesseractTextRecognitionEngine()
 
 export const platform = {
-  receipts: new BaselineDexieReceiptRepository(systemClock, systemIdentifiers),
+  receipts,
+  ocr: new LocalReceiptOcrCoordinator(
+    receipts,
+    ocrRuns,
+    ocrEngine,
+    new DeterministicReceiptFieldExtractor(),
+    systemClock,
+    systemIdentifiers,
+  ),
   network: new LoopbackOnlyRuntimePolicy(),
 } as const
 

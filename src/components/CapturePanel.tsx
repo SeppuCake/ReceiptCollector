@@ -31,6 +31,7 @@ export function CapturePanel({ onSaved }: CapturePanelProps) {
         return
       }
       onSaved(result.value)
+      void platform.ocr.start(result.value.id)
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'The receipt could not be saved.')
     } finally {

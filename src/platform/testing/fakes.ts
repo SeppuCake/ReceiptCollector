@@ -1,4 +1,5 @@
 import type { ReceiptAsset, ReceiptRecord } from '../../domain/receipt'
+import type { ReceiptOcrCandidates } from '../../domain/ocr'
 import type {
   Clock,
   CryptographicRandomness,
@@ -135,6 +136,24 @@ export class InMemoryReceiptRepository implements ReceiptLedgerPersistence {
     this.receipts[index] = { ...this.receipts[index]!, ...patch }
     this.emit()
     return success(undefined)
+  }
+
+  async applyOcrSuggestions(receiptId: string, expectedUpdatedAt: string, candidates: ReceiptOcrCandidates): Promise<PlatformResult<{ applied: boolean }>> {
+    const index = this.receipts.findIndex((receipt) => receipt.id === receiptId)
+    if (index < 0) return failure('unavailable', 'The receipt no longer exists.')
+    const receipt = this.receipts[index]!
+    if (receipt.status === 'confirmed' || receipt.updatedAt !== expectedUpdatedAt) return success({ applied: false })
+    this.receipts[index] = {
+      ...receipt,
+      merchant: receipt.merchant ?? candidates.merchant[0]?.value,
+      transactionDate: receipt.transactionDate ?? candidates.transactionDate[0]?.value,
+      totalMinor: receipt.totalMinor ?? candidates.totalMinor[0]?.value,
+      taxMinor: receipt.taxMinor ?? candidates.taxMinor[0]?.value,
+      status: 'needs_review',
+      updatedAt: this.clock.now().toISOString(),
+    }
+    this.emit()
+    return success({ applied: true })
   }
 
   async delete(receiptId: string): Promise<PlatformResult<void>> {

@@ -10,6 +10,7 @@ The checked-in application is the preserved browser prototype. It currently prov
 - IndexedDB storage of receipt metadata and original files;
 - SHA-256 duplicate detection;
 - multi-file receipts;
+- local English/Malay OCR for JPEG, PNG, and WebP receipts, with review-only suggestions for merchant, date, total, tax, and MYR currency;
 - receipt search, filters, review, deletion, monthly totals, and CSV export;
 - an installable PWA shell and Android/Chromium Share Target.
 
@@ -25,7 +26,7 @@ The target is a private, single-user application sharing one React/TypeScript co
 
 Normal operation, OCR, imports, ledger calculations, tax estimates, and backup creation must work without internet. No receipt, statement, OCR, ledger, or telemetry data may be uploaded. Email verification, cloud synchronization, MyInvois submission, and live MyInvois status checks are outside the approved prototype.
 
-The planned prototype includes encrypted local storage and recovery, local PIN with optional platform authentication, English/Malay/Traditional Chinese OCR, Malaysian e-Invoice intake, Maybank and spreadsheet imports, line items and splits, reconciliation, monthly targets, Form BE estimates, and an auditable workbook. These are roadmap commitments, not current implementation claims.
+The planned prototype still includes encrypted local storage and recovery, local PIN with optional platform authentication, Traditional/Simplified Chinese OCR and native OCR adapters, Malaysian e-Invoice intake, Maybank and spreadsheet imports, line items and splits, reconciliation, monthly targets, Form BE estimates, and an auditable workbook. These are roadmap commitments, not current implementation claims.
 
 The `supabase/` schema and function remain checked in only as historical, non-deployed prototype source. No cloud client, browser credentials, or Supabase runtime dependency ships in the application.
 
@@ -41,7 +42,9 @@ npx.cmd playwright install chromium
 npm.cmd run verify
 ```
 
-Individual checks are available as `typecheck`, `lint`, `test`, `regulatory:validate`, `build`, and `test:e2e` scripts. E2E tests use synthetic receipts, exercise the production service worker offline, and fail on any non-loopback request.
+Individual checks are available as `typecheck`, `lint`, `test`, `regulatory:validate`, `build`, `test:e2e`, and `test:ocr` scripts. OCR and E2E tests use synthetic receipts, exercise the production service worker offline, and fail on any non-loopback request.
+
+The first OCR model load is intentionally sizeable because its worker, WASM core, and English/Malay models are bundled locally. OCR never confirms an expense: every suggestion remains editable and requires human confirmation. PDFs and HEIC/HEIF files still use manual review because PDF rendering and HEIC decoding are not part of this slice.
 
 ## Product safeguards
 

@@ -113,6 +113,7 @@ export default function App() {
         const receipt = result.value
         setView('inbox')
         setSelectedId(receipt.id)
+        void platform.ocr.start(receipt.id)
       })
       .catch((reason: unknown) => setShareError(reason instanceof Error ? reason.message : 'Shared receipt import failed.'))
   }, [])

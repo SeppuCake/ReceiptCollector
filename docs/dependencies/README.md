@@ -32,10 +32,10 @@ Reviewed 2026-08-13. Exact versions are pins, not floating recommendations. Regi
 
 ## OCR engine and models
 
-- [Tesseract 5.5.2](https://github.com/tesseract-ocr/tesseract/releases) with Apache-2.0 code is the offline benchmark candidate, not yet a product selection. Tesseract does not parse PDFs itself and depends on Leptonica and its licences.
-- Candidate `tessdata_fast` models are English `eng` (3.92 MB), Malay `msa` (1.67 MB), Traditional Chinese `chi_tra` (2.26 MB), and secondary Simplified Chinese `chi_sim` (2.35 MB). Model repository provenance, individual file SHA-256 values, traineddata version, and notices must be pinned before bundling.
-- [Tesseract.js 7.0.0](https://github.com/naptha/tesseract.js/releases) (Apache-2.0) was reviewed as a browser/WASM fallback. It is rejected for the native feasibility default because memory, startup, and mobile receipt accuracy still require comparison against native builds; it may remain a benchmark participant.
-- No model is downloaded or redistributed in Stage 1. The Stage 4 selection gate remains a 30–50 receipt benchmark across the required languages and document conditions.
+- [Tesseract.js 7.0.0](https://github.com/naptha/tesseract.js/releases) and `tesseract.js-core 7.0.0` (Apache-2.0) are selected for the browser/PWA OCR vertical slice. The npm installs occupy about 1.35 MB and 43.17 MB respectively; asset preparation copies only the reusable worker and three LSTM WASM core variants (about 11.27 MB) needed across browser SIMD capabilities. Worker, core, and model paths are explicit local URLs, CDN defaults are rewritten to blocked local paths, and Playwright rejects non-loopback requests.
+- English `eng` (4,113,088 bytes; SHA-256 `7d4322bd2a7749724879683fc3912cb542f19906c83bcc1a52132556427170b2`) and Malay `msa` (1,747,801 bytes; SHA-256 `e41a3e5febfec50c90371eb1cbb17a48b10cad387900e3420b1f134c1b766cba`) are redistributed from official [`tessdata_fast`](https://github.com/tesseract-ocr/tessdata_fast) revision `87416418657359cb625c412a48b6e1d6d41c29bd` under Apache-2.0. `public/ocr/models/manifest.json` is the machine-readable provenance record; `npm run ocr:prepare` rejects checksum drift.
+- Tesseract.js is compatible with the current Vite/Chromium PWA and runs offline in a Web Worker. It accepts JPEG, PNG, and WebP in this slice. It does not parse PDFs, and HEIC/HEIF decoding is deferred. Raw text and run history remain inside the currently unencrypted IndexedDB baseline, so users must use synthetic/non-sensitive data until the vault stage.
+- Traditional Chinese `chi_tra` and secondary Simplified Chinese `chi_sim` remain deferred until the 30–50 receipt benchmark records exact provenance, size, accuracy, startup, and peak-memory evidence. Native Apple Vision, bundled Android ML Kit, and native Windows Tesseract remain platform benchmark alternatives rather than accepted adapters.
 
 ## Document, spreadsheet, and archive parsing
 
