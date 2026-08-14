@@ -36,4 +36,17 @@ describe('DeterministicReceiptFieldExtractor', () => {
     expect(result.transactionDate).toEqual([])
     expect(result.totalMinor.map((candidate) => candidate.value)).toEqual([1000, 1200])
   })
+
+  it('does not treat a tax percentage as the tax amount and understands Malay dates', () => {
+    const result = new DeterministicReceiptFieldExtractor().extract([
+      line('KEDAI CONTOH'),
+      line('TARIKH 15 OGOS 2025'),
+      line('CUKAI SST 6% RM 0.74'),
+      line('JUMLAH RM 1,234.56'),
+    ])
+
+    expect(result.transactionDate[0]?.value).toBe('2025-08-15')
+    expect(result.taxMinor.map((candidate) => candidate.value)).toEqual([74])
+    expect(result.totalMinor[0]?.value).toBe(123456)
+  })
 })

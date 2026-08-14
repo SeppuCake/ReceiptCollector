@@ -3,14 +3,14 @@ import type { ReceiptFieldExtractor } from '../../platform/contracts'
 
 const TOTAL_LABEL = /\b(?:GRAND\s+TOTAL|TOTAL|JUMLAH|AMOUNT(?:\s+DUE)?)\b/i
 const EXCLUDED_TOTAL_LABEL = /\b(?:SUB\s*TOTAL|TENDER(?:ED)?|CASH|CHANGE|ROUND(?:ING)?|BALANCE)\b/i
-const TAX_LABEL = /\b(?:TAX|SST|GST|SERVICE\s+TAX)\b/i
+const TAX_LABEL = /\b(?:TAX|SST|GST|SERVICE\s+TAX|CUKAI)\b/i
 const DATE_PATTERN = /\b(20\d{2})[-/.](0?[1-9]|1[0-2])[-/.](0?[1-9]|[12]\d|3[01])\b|\b(0?[1-9]|[12]\d|3[01])[-/.](0?[1-9]|1[0-2])[-/.]((?:20)?\d{2})\b/
-const TEXTUAL_DATE_PATTERN = /\b(0?[1-9]|[12]\d|3[01])\s+(JAN(?:UARY)?|FEB(?:RUARY)?|MAR(?:CH)?|APR(?:IL)?|MAY|JUN(?:E)?|JUL(?:Y)?|AUG(?:UST)?|SEP(?:TEMBER)?|OCT(?:OBER)?|NOV(?:EMBER)?|DEC(?:EMBER)?)\s+(20\d{2})\b/i
-const AMOUNT_PATTERN = /(?:\b(?:RM|MYR)\s*)?([0-9][0-9., ]*[0-9]|[0-9])/gi
+const TEXTUAL_DATE_PATTERN = /\b(0?[1-9]|[12]\d|3[01])\s+(JAN(?:UARY|UARI)?|FEB(?:RUARY|RUARI)?|MAR(?:CH)?|MAC|APR(?:IL)?|MAY|MEI|JUN(?:E)?|JUL(?:Y|AI)?|AUG(?:UST)?|OGOS|SEP(?:TEMBER)?|OCT(?:OBER)?|OKTOBER|NOV(?:EMBER)?|DEC(?:EMBER)?|DISEMBER)\s+(20\d{2})\b/i
+const AMOUNT_PATTERN = /(?:\b(RM|MYR)\s*)?(\d{1,3}(?:[.,\s]\d{3})+(?:[.,]\d{1,2})?|\d+(?:[.,]\d{1,2})?)/gi
 
 const months = new Map([
-  ['JAN', 1], ['FEB', 2], ['MAR', 3], ['APR', 4], ['MAY', 5], ['JUN', 6],
-  ['JUL', 7], ['AUG', 8], ['SEP', 9], ['OCT', 10], ['NOV', 11], ['DEC', 12],
+  ['JAN', 1], ['FEB', 2], ['MAR', 3], ['MAC', 3], ['APR', 4], ['MAY', 5], ['MEI', 5], ['JUN', 6],
+  ['JUL', 7], ['AUG', 8], ['OGO', 8], ['SEP', 9], ['OCT', 10], ['OKT', 10], ['NOV', 11], ['DEC', 12], ['DIS', 12],
 ])
 
 function evidence(observation: TextObservation) {
@@ -53,11 +53,16 @@ function parseAmount(raw: string): number | undefined {
 function amountCandidates(observation: TextObservation, confidenceBoost: number): OcrCandidate<number>[] {
   const results: OcrCandidate<number>[] = []
   for (const match of observation.text.matchAll(AMOUNT_PATTERN)) {
-    const value = parseAmount(match[1]!)
+    const matchEnd = (match.index ?? 0) + match[0].length
+    if (observation.text.slice(matchEnd).trimStart().startsWith('%')) continue
+    const value = parseAmount(match[2]!)
     if (value === undefined) continue
     results.push({
       value,
-      confidence: Math.min(1, observation.confidence + confidenceBoost),
+      confidence: Math.min(
+        1,
+        observation.confidence + confidenceBoost + (match[1] ? 0.04 : 0) + (matchEnd / observation.text.length) * 0.02,
+      ),
       language: observation.language,
       evidence: evidence(observation),
     })
