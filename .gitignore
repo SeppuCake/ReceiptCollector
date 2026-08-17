@@ -53,3 +53,4 @@ test-results/
 
 # Reproducibly copied from pinned npm OCR packages by npm run ocr:prepare
 /public/ocr/runtime/
+/tests
